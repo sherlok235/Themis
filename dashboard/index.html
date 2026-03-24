@@ -1,0 +1,1257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PoWS — Proof-of-Web-State</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:        #050b0f;
+    --bg2:       #0a1520;
+    --bg3:       #0f1e2e;
+    --border:    #1a3a5c;
+    --accent:    #00d4ff;
+    --accent2:   #00ff9d;
+    --danger:    #ff3b30;
+    --warn:      #f0a500;
+    --text:      #c8dde8;
+    --dim:       #4a6a7a;
+    --glow:      0 0 20px rgba(0,212,255,0.25);
+    --glow-g:    0 0 20px rgba(0,255,157,0.25);
+    --glow-r:    0 0 20px rgba(255,59,48,0.35);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Scanlines */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.12) 2px,
+      rgba(0,0,0,0.12) 4px
+    );
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── Header ── */
+  header {
+    position: relative;
+    z-index: 10;
+    border-bottom: 1px solid var(--border);
+    padding: 20px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: linear-gradient(180deg, rgba(0,212,255,0.05) 0%, transparent 100%);
+  }
+
+  .logo-area {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .logo-hex {
+    width: 44px; height: 44px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .logo-hex svg { width: 44px; height: 44px; }
+
+  .logo-text h1 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: white;
+    letter-spacing: 2px;
+  }
+
+  .logo-text p {
+    font-size: 10px;
+    color: var(--dim);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    font-size: 11px;
+    color: var(--dim);
+  }
+
+  .status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent2);
+    box-shadow: 0 0 8px var(--accent2);
+    display: inline-block;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  /* ── Main layout ── */
+  main {
+    position: relative;
+    z-index: 1;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 40px;
+  }
+
+  /* ── URL Input ── */
+  .input-section {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 28px 32px;
+    margin-bottom: 32px;
+    box-shadow: var(--glow);
+  }
+
+  .input-label {
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  .input-row {
+    display: flex;
+    gap: 12px;
+    align-items: stretch;
+  }
+
+  .url-input {
+    flex: 1;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px 20px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    color: white;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .url-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 12px rgba(0,212,255,0.2);
+  }
+
+  .url-input::placeholder { color: var(--dim); }
+
+  .validate-btn {
+    background: var(--accent);
+    color: var(--bg);
+    border: none;
+    border-radius: 6px;
+    padding: 14px 32px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .validate-btn:hover:not(:disabled) {
+    background: white;
+    box-shadow: var(--glow);
+    transform: translateY(-1px);
+  }
+
+  .validate-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* Demo buttons */
+  .demo-row {
+    margin-top: 12px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .demo-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 6px 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--dim);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .demo-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* ── Progress ── */
+  #progressSection {
+    display: none;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 24px 32px;
+    margin-bottom: 32px;
+  }
+
+  .progress-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    font-size: 12px;
+    color: var(--accent);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .spinner {
+    width: 16px; height: 16px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .validator-bars {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+
+  .v-bar {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 16px;
+  }
+
+  .v-bar-name {
+    font-size: 11px;
+    color: var(--dim);
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+  }
+
+  .v-bar-status {
+    font-size: 12px;
+    color: var(--accent);
+  }
+
+  .v-bar-status.done { color: var(--accent2); }
+  .v-bar-status.error { color: var(--danger); }
+
+  /* ── Results ── */
+  #resultsSection { display: none; }
+
+  /* Verdict banner */
+  .verdict-banner {
+    border-radius: 8px;
+    padding: 24px 32px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border: 1px solid;
+  }
+
+  .verdict-banner.certified {
+    background: rgba(0,255,157,0.06);
+    border-color: var(--accent2);
+    box-shadow: var(--glow-g);
+  }
+
+  .verdict-banner.mismatch {
+    background: rgba(255,59,48,0.06);
+    border-color: var(--danger);
+    box-shadow: var(--glow-r);
+  }
+
+  .verdict-icon { font-size: 36px; margin-right: 20px; }
+
+  .verdict-text h2 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: 1px;
+  }
+
+  .verdict-text h2.certified { color: var(--accent2); }
+  .verdict-text h2.mismatch { color: var(--danger); }
+
+  .verdict-text p {
+    font-size: 12px;
+    color: var(--dim);
+    margin-top: 4px;
+  }
+
+  .verdict-meta {
+    text-align: right;
+    font-size: 11px;
+    color: var(--dim);
+    line-height: 1.8;
+  }
+
+  .verdict-meta .fp {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    word-break: break-all;
+    max-width: 280px;
+  }
+
+  /* ── Grid panels ── */
+  .panels-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  .panel {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+  }
+
+  .panel-title {
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: var(--dim);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* Validator comparison table */
+  .validators-panel {
+    grid-column: 1 / -1;
+  }
+
+  .val-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .val-table th {
+    text-align: left;
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--dim);
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .val-table td {
+    padding: 10px 12px;
+    font-size: 12px;
+    border-bottom: 1px solid rgba(26,58,92,0.5);
+    font-family: 'JetBrains Mono', monospace;
+    vertical-align: middle;
+  }
+
+  .val-table tr:last-child td { border-bottom: none; }
+
+  .hash-cell {
+    color: var(--accent);
+    font-size: 11px;
+  }
+
+  .hash-cell.match { color: var(--accent2); }
+  .hash-cell.no-match { color: var(--danger); }
+
+  /* Mismatch detail */
+  .mismatch-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .mismatch-item {
+    background: rgba(255,59,48,0.08);
+    border: 1px solid rgba(255,59,48,0.3);
+    border-radius: 4px;
+    padding: 12px 16px;
+    font-size: 11px;
+    line-height: 1.6;
+  }
+
+  .mismatch-item .field-name {
+    color: var(--danger);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+  }
+
+  .hash-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .hash-row .label { color: var(--dim); width: 100px; flex-shrink: 0; }
+  .hash-row .val { color: var(--text); font-family: 'JetBrains Mono', monospace; }
+
+  /* Stat row */
+  .stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(26,58,92,0.4);
+    font-size: 12px;
+  }
+
+  .stat-row:last-child { border-bottom: none; }
+  .stat-label { color: var(--dim); }
+  .stat-value { color: var(--accent); font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+  .stat-value.green { color: var(--accent2); }
+  .stat-value.red { color: var(--danger); }
+  .stat-value.white { color: white; }
+
+  /* Evidence hash panel */
+  .evidence-box {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 12px 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--accent2);
+    word-break: break-all;
+    line-height: 1.5;
+    margin-top: 8px;
+  }
+
+  /* Resources table */
+  .resources-panel {
+    grid-column: 1 / -1;
+    overflow: hidden;
+  }
+
+  .resource-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(26,58,92,0.4);
+    font-size: 11px;
+    overflow: hidden;
+    min-width: 0;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .resource-row:last-child { border-bottom: none; }
+
+  .res-status {
+    width: 32px;
+    text-align: center;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-weight: 700;
+  }
+
+  .res-status.ok { background: rgba(0,255,157,0.15); color: var(--accent2); }
+  .res-status.err { background: rgba(255,59,48,0.15); color: var(--danger); }
+  .res-status.redir { background: rgba(240,165,0,0.15); color: var(--warn); }
+
+  .res-url { flex: 1; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+  .res-size { color: var(--dim); width: 60px; text-align: right; white-space: nowrap; flex-shrink: 0; }
+  .res-hash { color: var(--accent); width: 110px; text-align: right; font-size: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex-shrink: 0; font-family: monospace; }
+
+  /* ── History ── */
+  #historySection {
+    margin-top: 32px;
+  }
+
+  .section-title {
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: var(--dim);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+
+  .history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .history-item {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    cursor: pointer;
+    transition: border-color 0.2s;
+    font-size: 12px;
+  }
+
+  .history-item:hover { border-color: var(--accent); }
+
+  .h-verdict { font-size: 16px; flex-shrink: 0; }
+  .h-url { flex: 1; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .h-time { color: var(--dim); font-size: 11px; flex-shrink: 0; }
+  .h-badge {
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 3px;
+    letter-spacing: 1px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .h-badge.cert { background: rgba(0,255,157,0.15); color: var(--accent2); }
+  .h-badge.fail { background: rgba(255,59,48,0.15); color: var(--danger); }
+
+  /* Animations */
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .anim-in { animation: fadeIn 0.4s ease both; }
+
+  @keyframes countUp {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    .panels-grid { grid-template-columns: 1fr; }
+    .validators-panel, .resources-panel { grid-column: 1; }
+    main { padding: 20px; }
+    header { padding: 16px 20px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-area">
+    <div class="logo-hex">
+      <svg viewBox="0 0 44 44" fill="none">
+        <polygon points="22,2 40,12 40,32 22,42 4,32 4,12" fill="rgba(0,212,255,0.08)" stroke="#00d4ff" stroke-width="1.5"/>
+        <text x="22" y="28" text-anchor="middle" font-family="Space Grotesk" font-size="14" font-weight="700" fill="#00d4ff">⬡</text>
+      </svg>
+    </div>
+    <div class="logo-text">
+      <h1>PoWS</h1>
+      <p>Proof-of-Web-State</p>
+    </div>
+  </div>
+  <div class="header-right">
+    <span><span class="status-dot"></span> &nbsp;SYSTEM ONLINE</span>
+    <span id="headerTime">--:--:-- UTC</span>
+    <span>ENGINE: GECKO (FIREFOX)</span>
+    <span>VALIDATORS: 3</span>
+    <span id="backendBadge" style="color:var(--dim)">● CHECKING…</span>
+    <a id="docsLink" href="http://localhost:8000/docs" target="_blank" style="color:var(--dim);font-size:11px;text-decoration:none;letter-spacing:1px;" title="Open API docs">API DOCS ↗</a>
+  </div>
+</header>
+
+<main>
+
+  <!-- URL Input -->
+  <div class="input-section">
+    <div class="input-label">▸ Target URL for Validation</div>
+    <div class="input-row">
+      <input type="text" class="url-input" id="urlInput"
+             placeholder="https://example.com"
+             value="https://example.com" />
+      <button class="validate-btn" id="validateBtn" onclick="startValidation()">
+        Validate
+      </button>
+    </div>
+    <div class="demo-row">
+      <span style="font-size:11px;color:var(--dim);align-self:center;">Demo targets:</span>
+      <button class="demo-btn" onclick="loadDemo('normal')">✅ Normal site (Scenario 1)</button>
+      <button class="demo-btn" onclick="loadDemo('injected')">🚨 Injected site (Scenario 2)</button>
+      <label id="strictToggleWrap" style="display:flex;align-items:center;gap:6px;cursor:pointer;margin-left:auto;font-size:11px;color:var(--dim);user-select:none;" title="Require all 3 validators to agree instead of 2/3">
+        <input type="checkbox" id="strictMode" style="accent-color:var(--accent);cursor:pointer;width:14px;height:14px;">
+        <span>Strict (3/3)</span>
+      </label>
+    </div>
+  </div>
+
+  <!-- Progress -->
+  <div id="progressSection">
+    <div class="progress-header">
+      <div class="spinner"></div>
+      <span id="progressLabel">INITIALIZING VALIDATORS…</span>
+    </div>
+    <div class="validator-bars">
+      <div class="v-bar">
+        <div class="v-bar-name">▸ VALIDATOR-1 / GEO-EU</div>
+        <div class="v-bar-status" id="v1Status">Launching Firefox…</div>
+      </div>
+      <div class="v-bar">
+        <div class="v-bar-name">▸ VALIDATOR-2 / GEO-US</div>
+        <div class="v-bar-status" id="v2Status">Launching Firefox…</div>
+      </div>
+      <div class="v-bar">
+        <div class="v-bar-name">▸ VALIDATOR-3 / GEO-ASIA</div>
+        <div class="v-bar-status" id="v3Status">Launching Firefox…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Results -->
+  <div id="resultsSection">
+    <div id="verdictBanner" class="verdict-banner anim-in">
+      <div style="display:flex;align-items:center;">
+        <div class="verdict-icon" id="verdictIcon">✅</div>
+        <div class="verdict-text">
+          <h2 id="verdictTitle" class="certified">CERTIFIED</h2>
+          <p id="verdictSubtitle">All validators reached consensus</p>
+        </div>
+      </div>
+      <div class="verdict-meta">
+        <div id="verdictAgreement">3/3 validators agree</div>
+        <div id="verdictTime">--</div>
+        <div class="fp" id="verdictFp">awaiting fingerprint…</div>
+      </div>
+    </div>
+
+    <div class="panels-grid">
+      <!-- Validator Comparison -->
+      <div class="panel validators-panel">
+        <div class="panel-title">▸ Validator Hash Comparison</div>
+        <table class="val-table">
+          <thead>
+            <tr>
+              <th>VALIDATOR</th>
+              <th>DOM HASH</th>
+              <th>LAYOUT HASH</th>
+              <th>MERKLE ROOT</th>
+              <th>SCREENSHOT Φ</th>
+              <th>HTTP</th>
+              <th>TLS</th>
+              <th>ERROR</th>
+            </tr>
+          </thead>
+          <tbody id="valTableBody">
+            <!-- filled by JS -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Consensus Details -->
+      <div class="panel">
+        <div class="panel-title">▸ Consensus Stats</div>
+        <div id="consensusStats"><!-- filled --></div>
+      </div>
+
+      <!-- Network Info -->
+      <div class="panel">
+        <div class="panel-title">▸ Network / TLS</div>
+        <div id="networkInfo"><!-- filled --></div>
+      </div>
+
+      <!-- Evidence Hash -->
+      <div class="panel">
+        <div class="panel-title">▸ Evidence Bundle</div>
+        <div style="font-size:11px;color:var(--dim);margin-bottom:8px;">
+          Final hash ready for blockchain notarization (Sui testnet)
+        </div>
+        <div class="evidence-box" id="evidenceHash">—</div>
+        <div style="margin-top:12px;">
+          <button class="demo-btn" onclick="notarize()" style="border-color:var(--accent2);color:var(--accent2);">
+            ⛓ Notarize on Sui Testnet
+          </button>
+        </div>
+        <div id="notarizeResult" style="margin-top:8px;font-size:11px;color:var(--accent2);"></div>
+      </div>
+
+      <!-- Mismatches or Resources -->
+      <div class="panel resources-panel" id="bottomPanel">
+        <div class="panel-title" id="bottomPanelTitle">▸ Resources Captured</div>
+        <div id="bottomPanelContent"><!-- filled --></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- History -->
+  <div id="historySection">
+    <div class="section-title">▸ Validation History</div>
+    <div class="history-list" id="historyList">
+      <div style="font-size:12px;color:var(--dim);">No validations yet. Run your first validation above.</div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+// ══════════════════════════════════════════════════════════════════════════════
+// CONFIG — auto-detect coordinator. Dashboard runs on :3000, coordinator on :8000.
+// ══════════════════════════════════════════════════════════════════════════════
+function detectCoordinatorURL() {
+  const h = window.location.hostname;
+  // Always try same host on port 8000 (works for localhost AND Docker bridge IPs)
+  return `http://${h}:8000`;
+}
+const COORDINATOR_URL = detectCoordinatorURL();
+
+// USE_MOCK = true  → pure in-browser demo (no backend needed)
+// USE_MOCK = false → calls real coordinator + Firefox validators
+// Auto-set: try real backend first; fall back to mock if unreachable
+let USE_MOCK = false;  // will be confirmed by health-check below
+
+async function checkBackendAndInit() {
+  try {
+    const r = await fetch(COORDINATOR_URL + '/health', { signal: AbortSignal.timeout(2000) });
+    if (r.ok) {
+      USE_MOCK = false;
+      document.getElementById('backendBadge').textContent = '● REAL BACKEND';
+      document.getElementById('backendBadge').style.color = 'var(--accent2)';
+      return;
+    }
+  } catch(_) {}
+  USE_MOCK = true;
+  document.getElementById('backendBadge').textContent = '● MOCK MODE';
+  document.getElementById('backendBadge').style.color = 'var(--warn)';
+}
+
+// ── Clock ────────────────────────────────────────────────────────────────────
+function updateClock() {
+  const now = new Date();
+  document.getElementById('headerTime').textContent =
+    now.toISOString().slice(11, 19) + ' UTC';
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ── URL translation for Docker ─────────────────────────────────────────────────
+// The coordinator and validators run INSIDE Docker. When the user types
+// "localhost:8080/..." the browser resolves it fine, but the coordinator
+// URL is sent as-is to the coordinator.
+// The coordinator handles any Docker/local translation server-side.
+function translateUrlForValidators(url) {
+  return url;
+}
+
+// ── History store ─────────────────────────────────────────────────────────────
+let history = [];
+
+// ── Demo URLs ─────────────────────────────────────────────────────────────────
+let splitUrlB = null;  // set when injected scenario triggers a split test
+
+function loadDemo(type) {
+  const h = window.location.hostname;
+  const base = `http://${h}:8080`;
+  if (type === 'normal') {
+    document.getElementById('urlInput').value = base + '/normal.html';
+    splitUrlB = null;  // normal scenario: no split
+  } else {
+    // Injected scenario: split test — V1+V2 get normal, random V gets injected
+    document.getElementById('urlInput').value = base + '/normal.html';
+    splitUrlB = base + '/injected.html';
+  }
+  startValidation();
+}
+
+// ── Validation entry point ─────────────────────────────────────────────────────
+async function startValidation() {
+  const url = document.getElementById('urlInput').value.trim();
+  if (!url) { alert('Please enter a URL'); return; }
+
+  document.getElementById('validateBtn').disabled = true;
+  document.getElementById('resultsSection').style.display = 'none';
+  document.getElementById('progressSection').style.display = 'block';
+
+  // Reset validator statuses
+  ['v1Status','v2Status','v3Status'].forEach(id => {
+    const el = document.getElementById(id);
+    el.textContent = 'Launching Firefox…';
+    el.className = 'v-bar-status';
+  });
+
+  const splitLabel = splitUrlB ? ' · SPLIT TAMPER TEST' : '';
+  document.getElementById('progressLabel').textContent = `VALIDATING: ${url}${splitLabel}`;
+
+  let result;
+  const isStrict = document.getElementById('strictMode')?.checked || false;
+  if (USE_MOCK) {
+    result = await mockValidation(url, isStrict);
+  } else {
+    result = await realValidation(url, isStrict);
+  }
+
+  showResults(result, url);
+  addHistory(result, url);
+  splitUrlB = null;  // reset after each run
+
+  document.getElementById('progressSection').style.display = 'none';
+  document.getElementById('validateBtn').disabled = false;
+}
+
+// ── Mock validation (runs entirely in browser — demo without backend) ─────────
+async function mockValidation(url, strict=false) {
+  const isInjected = url.includes('injected') || url.includes('tamper') || url.includes('evil');
+  const progress = ['v1Status','v2Status','v3Status'];
+  const steps = [
+    'Launching Firefox (Gecko)…',
+    'Resolving DNS…',
+    'Establishing TLS…',
+    'Loading page…',
+    'Waiting for networkidle…',
+    'Extracting DOM…',
+    'Computing layout hash…',
+    'Capturing screenshot…',
+    'Hashing resources…',
+    'Building Merkle tree…',
+    'Signing fingerprint…',
+    '✓ Complete',
+  ];
+
+  // Animate validator progress with stagger
+  await Promise.all(progress.map(async (id, vi) => {
+    await sleep(vi * 400);
+    for (const step of steps) {
+      document.getElementById(id).textContent = step;
+      await sleep(180 + Math.random() * 120);
+    }
+    document.getElementById(id).className = 'v-bar-status done';
+  }));
+
+  // Build mock data
+  const h = (seed) => mockSha256(seed + url);
+
+  // For injected: validator 3 "catches" the injection — different DOM hash
+  const domBase = h('dom-normal');
+  const layoutBase = h('layout-base');
+  const merkleBase = h('merkle-base');
+
+  const validators = [
+    {
+      validator_id: 'validator-1',
+      dns_ip: '93.184.216.34',
+      http_status: 200,
+      dom_hash: domBase,
+      layout_hash: isInjected ? h('layout-injected') : layoutBase,
+      resource_merkle_root: isInjected ? h('merkle-injected') : merkleBase,
+      tls_hash: h('tls-cert'),
+      screenshot_hash: mockSha256('screenshot-v1').slice(0,16),
+      har_summary: { total_requests: 12, total_bytes: 48320 },
+      resources: mockResources(url, isInjected),
+      final_fingerprint: isInjected ? h('fp-injected-1') : h('fp-normal'),
+    },
+    {
+      validator_id: 'validator-2',
+      dns_ip: '93.184.216.34',
+      http_status: 200,
+      dom_hash: domBase,
+      layout_hash: isInjected ? h('layout-injected') : layoutBase,
+      resource_merkle_root: isInjected ? h('merkle-injected') : merkleBase,
+      tls_hash: h('tls-cert'),
+      screenshot_hash: mockSha256('screenshot-v2').slice(0,16),
+      har_summary: { total_requests: 12, total_bytes: 47890 },
+      resources: mockResources(url, isInjected),
+      final_fingerprint: isInjected ? h('fp-injected-2') : h('fp-normal'),
+    },
+    {
+      // Validator 3 uses a slightly different network path — catches injection differently
+      validator_id: 'validator-3',
+      dns_ip: '93.184.216.35',
+      http_status: 200,
+      dom_hash: isInjected ? h('dom-injected-v3') : domBase,  // different CDN node
+      layout_hash: isInjected ? h('layout-injected-v3') : layoutBase,
+      resource_merkle_root: isInjected ? h('merkle-injected-v3') : merkleBase,
+      tls_hash: h('tls-cert'),
+      screenshot_hash: mockSha256('screenshot-v3').slice(0,16),
+      har_summary: { total_requests: 11, total_bytes: 47100 },
+      resources: mockResources(url, isInjected),
+      final_fingerprint: isInjected ? h('fp-injected-3-different') : h('fp-normal'),
+    },
+  ];
+
+  // Compute consensus
+  const fps = validators.map(v => v.final_fingerprint);
+  const fpCounts = {};
+  fps.forEach(f => fpCounts[f] = (fpCounts[f]||0) + 1);
+  const dominant = Object.entries(fpCounts).sort((a,b)=>b[1]-a[1])[0];
+  const certified = dominant[1] >= 2;
+
+  const mismatches = [];
+  if (!certified || isInjected) {
+    // Report mismatch details
+    const fields = ['dom_hash','layout_hash','resource_merkle_root'];
+    for (const field of fields) {
+      const vals = validators.map(v => ({id: v.validator_id, val: v[field]}));
+      const unique = [...new Set(vals.map(v=>v.val))];
+      if (unique.length > 1) {
+        mismatches.push({
+          field,
+          validator_a: vals[0].id,
+          validator_b: vals[2].id,
+          hash_a: vals[0].val.slice(0,16)+'…',
+          hash_b: vals[2].val.slice(0,16)+'…',
+        });
+      }
+    }
+  }
+
+  const threshold = strict ? 3 : 2;
+  const strictFail = strict && dominant[1] < 3;
+  const finalCertified = certified && !isInjected && !strictFail;
+  return {
+    url,
+    timestamp: new Date().toISOString(),
+    validators,
+    consensus: {
+      certified: finalCertified,
+      dominant_fingerprint: dominant[0],
+      agreement_count: isInjected ? 0 : dominant[1],
+      total_validators: 3,
+      threshold,
+      mismatches: (isInjected || strictFail) ? mismatches : [],
+      evidence_hash: mockSha256('evidence-'+url+Date.now()),
+      verdict: finalCertified ? '✅ CERTIFIED' : (strict ? '🔒 STRICT CONSENSUS FAILED' : '🚨 MISMATCH DETECTED'),
+    }
+  };
+}
+
+function mockResources(url, injected) {
+  const base = [
+    { url: url, status: 200, size: 12400, hash: mockSha256('html').slice(0,16), content_type: 'text/html' },
+    { url: url.replace(/[^/]+$/, '') + 'style.css', status: 200, size: 8320, hash: injected ? mockSha256('css-injected').slice(0,16) : mockSha256('css').slice(0,16), content_type: 'text/css' },
+    { url: url.replace(/[^/]+$/, '') + 'app.js', status: 200, size: 24100, hash: mockSha256('js').slice(0,16), content_type: 'application/javascript' },
+    { url: url.replace(/[^/]+$/, '') + 'logo.png', status: 200, size: 3200, hash: mockSha256('img').slice(0,16), content_type: 'image/png' },
+    { url: 'https://fonts.googleapis.com/css2?family=Segoe+UI', status: 200, size: 1100, hash: mockSha256('font').slice(0,16), content_type: 'text/css' },
+  ];
+  if (injected) {
+    base.push({
+      url: 'https://evil-phish.net/steal',
+      status: 0,
+      size: 0,
+      hash: mockSha256('evil').slice(0,16),
+      content_type: 'unknown',
+    });
+  }
+  return base;
+}
+
+function mockSha256(input) {
+  // Simple deterministic pseudo-hash for demo
+  let h = 0x6d2b4e8a;
+  for (let i = 0; i < input.length; i++) {
+    h = (Math.imul(31, h) + input.charCodeAt(i)) | 0;
+  }
+  // Expand to 64 hex chars
+  let result = '';
+  let seed = h >>> 0;
+  for (let i = 0; i < 8; i++) {
+    seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+    result += seed.toString(16).padStart(8, '0');
+  }
+  return result;
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ── Real backend validation ───────────────────────────────────────────────────
+async function realValidation(url, strict=false) {
+  // Animate validator bars while the real backend works
+  const progressSteps = [
+    'Launching Firefox (Gecko)…',
+    'Resolving DNS…',
+    'Establishing connection…',
+    'Loading page…',
+    'Waiting for networkidle…',
+    'Extracting DOM…',
+    'Computing layout hash…',
+    'Hashing resources…',
+    'Building Merkle tree…',
+    'Signing fingerprint…',
+  ];
+
+  let animRunning = true;
+  async function animateBar(id, delayMs) {
+    await sleep(delayMs);
+    for (const step of progressSteps) {
+      if (!animRunning) break;
+      document.getElementById(id).textContent = step;
+      await sleep(500 + Math.random() * 300);
+    }
+  }
+
+  const animPromises = [
+    animateBar('v1Status', 0),
+    animateBar('v2Status', 300),
+    animateBar('v3Status', 600),
+  ];
+
+  try {
+    // Send the URL as-is to coordinator; coordinator sends it to validators.
+    // URL translation is handled server-side by the coordinator.
+    const translatedUrl = translateUrlForValidators(url);
+    const resp = await fetch(COORDINATOR_URL + '/validate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(Object.assign(
+        { url: translatedUrl, strict: document.getElementById("strictMode")?.checked || false },
+        splitUrlB ? { url_b: translateUrlForValidators(splitUrlB) } : {}
+      )),
+    });
+    animRunning = false;
+    await Promise.all(animPromises);
+
+    // Mark all bars done
+    ['v1Status','v2Status','v3Status'].forEach(id => {
+      const el = document.getElementById(id);
+      el.textContent = '✓ Complete';
+      el.className = 'v-bar-status done';
+    });
+
+    const data = await resp.json();
+
+    // If the coordinator returned validators array, update bars with real hashes
+    if (data.validators && data.validators.length) {
+      data.validators.forEach((v, i) => {
+        const id = ['v1Status','v2Status','v3Status'][i];
+        if (id) {
+          const el = document.getElementById(id);
+          el.textContent = `✓ ${(v.final_fingerprint||'').slice(0,16)}…`;
+          el.className = 'v-bar-status done';
+        }
+      });
+    }
+
+    return data;
+  } catch(e) {
+    animRunning = false;
+    console.error('Backend error:', e);
+    ['v1Status','v2Status','v3Status'].forEach(id => {
+      const el = document.getElementById(id);
+      el.textContent = '✗ Failed';
+      el.className = 'v-bar-status error';
+    });
+    return {
+      error: e.message, url,
+      validators: [],
+      consensus: { certified: false, verdict: '⚠ BACKEND ERROR', mismatches: [], evidence_hash: '' }
+    };
+  }
+}
+
+// ── Render results ────────────────────────────────────────────────────────────
+function showResults(data, url) {
+  const c = data.consensus;
+  const certified = c.certified;
+
+  // Verdict banner
+  const banner = document.getElementById('verdictBanner');
+  banner.className = 'verdict-banner anim-in ' + (certified ? 'certified' : 'mismatch');
+  document.getElementById('verdictIcon').textContent = certified ? '✅' : '🚨';
+  const titleEl = document.getElementById('verdictTitle');
+  titleEl.textContent = certified ? 'CERTIFIED' : 'MISMATCH DETECTED';
+  titleEl.className = certified ? 'certified' : 'mismatch';
+  const rogueNode = data.rogue_validator;
+  const splitSuffix = rogueNode ? ` · Rogue node: ${rogueNode}` : '';
+  document.getElementById('verdictSubtitle').textContent =
+    certified
+      ? `${c.agreement_count} of ${c.total_validators} validators reached consensus`
+      : `Validators disagreed — ${c.mismatches.length} field(s) differ${splitSuffix}`;
+  document.getElementById('verdictAgreement').textContent =
+    `${c.agreement_count}/${c.total_validators} agree · threshold: ${c.threshold}`;
+  document.getElementById('verdictTime').textContent =
+    new Date(data.timestamp).toUTCString().slice(5,25) + ' UTC';
+  document.getElementById('verdictFp').textContent =
+    (c.dominant_fingerprint||'N/A').slice(0,48) + '…';
+
+  // Evidence hash
+  document.getElementById('evidenceHash').textContent = c.evidence_hash || '—';
+  document.getElementById('notarizeResult').textContent = '';
+
+  // Validator table
+  const vals = data.validators || [];
+  const firstDom = vals[0]?.dom_hash;
+  const firstLayout = vals[0]?.layout_hash;
+  const firstMerkle = vals[0]?.resource_merkle_root;
+
+  document.getElementById('valTableBody').innerHTML = vals.map(v => {
+    const matchDom = v.dom_hash === firstDom;
+    const matchLayout = v.layout_hash === firstLayout;
+    const matchMerkle = v.resource_merkle_root === firstMerkle;
+    return `
+      <tr>
+        <td style="color:var(--text);font-weight:600">${v.validator_id}</td>
+        <td class="hash-cell ${matchDom?'match':'no-match'}">${(v.dom_hash||'').slice(0,16)}…</td>
+        <td class="hash-cell ${matchLayout?'match':'no-match'}">${(v.layout_hash||'').slice(0,16)}…</td>
+        <td class="hash-cell ${matchMerkle?'match':'no-match'}">${(v.resource_merkle_root||'').slice(0,16)}…</td>
+        <td class="hash-cell">${v.screenshot_hash||'—'}</td>
+        <td style="color:${v.http_status===200?'var(--accent2)':'var(--danger)'}">${v.http_status||'?'}</td>
+        <td class="hash-cell">${(v.tls_hash||'').slice(0,8)}…</td>
+        <td style="color:var(--danger);font-size:0.8em;max-width:200px;overflow:hidden;text-overflow:ellipsis;" title="${v.error||''}">${v.error ? v.error.split('\n')[0] : '—'}</td>
+      </tr>`;
+  }).join('');
+
+  // Consensus stats
+  const firstV = vals[0] || {};
+  document.getElementById('consensusStats').innerHTML = `
+    <div class="stat-row"><span class="stat-label">Verdict</span><span class="stat-value ${certified?'green':'red'}">${c.verdict}</span></div>
+    <div class="stat-row"><span class="stat-label">Agreement</span><span class="stat-value white">${c.agreement_count}/${c.total_validators}</span></div>
+    <div class="stat-row"><span class="stat-label">Threshold</span><span class="stat-value">${c.threshold}-of-${c.total_validators}</span></div>
+    <div class="stat-row"><span class="stat-label">Mismatches</span><span class="stat-value ${c.mismatches.length?'red':'green'}">${c.mismatches.length}</span></div>
+    <div class="stat-row"><span class="stat-label">Total requests</span><span class="stat-value">${firstV.har_summary?.total_requests||'?'}</span></div>
+    <div class="stat-row"><span class="stat-label">Bytes captured</span><span class="stat-value">${fmtBytes(firstV.har_summary?.total_bytes||0)}</span></div>
+  `;
+
+  // Network info
+  document.getElementById('networkInfo').innerHTML = `
+    <div class="stat-row"><span class="stat-label">DNS IP (v1)</span><span class="stat-value white">${vals[0]?.dns_ip||'—'}</span></div>
+    <div class="stat-row"><span class="stat-label">DNS IP (v3)</span><span class="stat-value white">${vals[2]?.dns_ip||'—'}</span></div>
+    <div class="stat-row"><span class="stat-label">TLS fingerprint</span><span class="stat-value">${(vals[0]?.tls_hash||'').slice(0,12)}…</span></div>
+    <div class="stat-row"><span class="stat-label">HTTP status</span><span class="stat-value ${vals[0]?.http_status===200?'green':'red'}">${vals[0]?.http_status||'?'}</span></div>
+    <div class="stat-row"><span class="stat-label">Engine</span><span class="stat-value green">Gecko (Firefox)</span></div>
+    <div class="stat-row"><span class="stat-label">Viewport</span><span class="stat-value">1280 × 800</span></div>
+  `;
+
+  // Bottom panel: mismatches or resources
+  if (!certified && c.mismatches.length > 0) {
+    document.getElementById('bottomPanelTitle').textContent = '▸ Mismatch Details';
+    document.getElementById('bottomPanelContent').innerHTML = `
+      <div class="mismatch-list">
+        ${c.mismatches.map(m => `
+          <div class="mismatch-item">
+            <div class="field-name">⚠ ${m.field.replace(/_/g,' ')}</div>
+            <div class="hash-row"><span class="label">${m.validator_a}</span><span class="val">${m.hash_a}</span></div>
+            <div class="hash-row"><span class="label">${m.validator_b}</span><span class="val">${m.hash_b}</span></div>
+          </div>
+        `).join('')}
+        ${(vals[0]?.resources||[]).some(r=>r.url.includes('evil')) ? `
+          <div class="mismatch-item">
+            <div class="field-name">⚠ SUSPICIOUS EXTERNAL REQUEST DETECTED</div>
+            <div class="hash-row"><span class="label">URL</span><span class="val" style="color:var(--danger)">https://evil-phish.net/steal</span></div>
+            <div class="hash-row"><span class="label">Risk</span><span class="val" style="color:var(--danger)">Credential exfiltration endpoint</span></div>
+          </div>
+        ` : ''}
+      </div>`;
+  } else {
+    document.getElementById('bottomPanelTitle').textContent = '▸ Resources Captured (Validator 1)';
+    const resources = vals[0]?.resources || [];
+    document.getElementById('bottomPanelContent').innerHTML = resources.map(r => {
+      const sc = r.status;
+      const cls = sc === 200 ? 'ok' : (sc >= 300 && sc < 400 ? 'redir' : 'err');
+      return `
+        <div class="resource-row">
+          <span class="res-status ${cls}">${sc||'—'}</span>
+          <span class="res-url">${r.url}</span>
+          <span class="res-size">${fmtBytes(r.size)}</span>
+          <span class="res-hash" title="${r.hash||''}">${(r.hash||'').slice(0,12)}…</span>
+        </div>`;
+    }).join('') || '<div style="color:var(--dim);font-size:12px">No resources captured.</div>';
+  }
+
+  document.getElementById('resultsSection').style.display = 'block';
+  document.getElementById('resultsSection').classList.add('anim-in');
+}
+
+// ── History ────────────────────────────────────────────────────────────────────
+function addHistory(data, url) {
+  history.unshift(data);
+  const list = document.getElementById('historyList');
+  list.innerHTML = history.slice(0,10).map(h => {
+    const cert = h.consensus?.certified;
+    return `
+      <div class="history-item">
+        <span class="h-verdict">${cert ? '✅' : '🚨'}</span>
+        <span class="h-url">${h.url || url}</span>
+        <span class="h-time">${new Date(h.timestamp).toLocaleTimeString()}</span>
+        <span class="h-badge ${cert?'cert':'fail'}">${cert ? 'CERTIFIED' : 'MISMATCH'}</span>
+      </div>`;
+  }).join('');
+}
+
+// ── Notarize (mock) ────────────────────────────────────────────────────────────
+async function notarize() {
+  const hash = document.getElementById('evidenceHash').textContent;
+  if (!hash || hash === '—') return;
+  const el = document.getElementById('notarizeResult');
+  el.textContent = 'Submitting to Sui testnet…';
+  await sleep(1500);
+  const txid = mockSha256('tx-' + hash).slice(0, 24);
+  el.textContent = `✓ Notarized · TX: 0x${txid}`;
+}
+
+// ── Utilities ──────────────────────────────────────────────────────────────────
+function fmtBytes(b) {
+  if (!b) return '0 B';
+  if (b < 1024) return b + ' B';
+  if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
+  return (b/1048576).toFixed(1) + ' MB';
+}
+
+// ── Init: allow Enter key + check backend ─────────────────────────────────────
+document.getElementById('urlInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') startValidation();
+});
+
+// Auto-detect backend on load
+checkBackendAndInit();
+</script>
+</body>
+</html>

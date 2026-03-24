@@ -1,0 +1,68 @@
+# PoWS — Proof-of-Web-State
+# Usage: docker compose up --build
+# To force clean rebuild: docker compose build --no-cache && docker compose up
+
+services:
+  validator1:
+    build:
+      context: ./validator
+    environment:
+      VALIDATOR_ID: "validator-1"
+      PORT: "9001"
+    ports: ["9001:9001"]
+    networks: [pows-net]
+    restart: unless-stopped
+
+  validator2:
+    build:
+      context: ./validator
+    environment:
+      VALIDATOR_ID: "validator-2"
+      PORT: "9002"
+    ports: ["9002:9002"]
+    networks: [pows-net]
+    restart: unless-stopped
+
+  validator3:
+    build:
+      context: ./validator
+    environment:
+      VALIDATOR_ID: "validator-3"
+      PORT: "9003"
+    ports: ["9003:9003"]
+    networks: [pows-net]
+    restart: unless-stopped
+
+  coordinator:
+    build:
+      context: .
+      dockerfile: coordinator/Dockerfile
+    environment:
+      PORT: "8000"
+      VALIDATOR_1_URL: "http://validator1:9001"
+      VALIDATOR_2_URL: "http://validator2:9002"
+      VALIDATOR_3_URL: "http://validator3:9003"
+    ports: ["8000:8000"]
+    depends_on: [validator1, validator2, validator3]
+    networks: [pows-net]
+    restart: unless-stopped
+
+  demo-server:
+    image: python:3.12-slim
+    working_dir: /demo
+    volumes: ["./demo_targets:/demo"]
+    command: python3 -m http.server 8080
+    ports: ["8080:8080"]
+    networks: [pows-net]
+
+  dashboard:
+    image: python:3.12-slim
+    working_dir: /ui
+    volumes: ["./dashboard:/ui"]
+    command: python3 -m http.server 3000
+    ports: ["3000:3000"]
+    networks: [pows-net]
+
+networks:
+  pows-net:
+    driver: bridge
