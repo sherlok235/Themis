@@ -1,4 +1,4 @@
-# ⬡ PoWS — Proof-of-Web-State
+# ⬡ PoWS — Proof-of-Web-State AKA(Themis)
 
 **Independent website fingerprinting and certification using Firefox (Gecko engine)**
 
@@ -9,9 +9,9 @@ A PoC validator system that proves what a website delivered and rendered — ind
 ## 🏗 Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                        CLIENT / VC DEMO                      │
-│                    Dashboard  :3000                          │
+┌────────────────────────────────────────────────────────────┐
+│                           CLIENT                           │
+│                    Dashboard  :3000                        │
 └───────────────────────┬────────────────────────────────────┘
                         │ HTTP
             ┌───────────▼────────────┐
@@ -51,7 +51,7 @@ A PoC validator system that proves what a website delivered and rendered — ind
 
 ## 🚀 Quick Start
 
-### Option A — Docker Compose (recommended)
+### Option A — Docker Compose (recommended, only CLI)
 
 ```bash
 docker compose up --build
@@ -62,7 +62,7 @@ Then open:
 - **Coordinator API**: http://localhost:8000
 - **Demo targets**: http://localhost:8080/normal.html and http://localhost:8080/injected.html
 
-### Option B — Local Python (no Docker)
+### Option B — Local Python (no Docker), Not working  out of the  box,  may need  some  fixes.
 
 ```bash
 # Install Python deps
@@ -87,27 +87,6 @@ cd dashboard && python3 -m http.server 3000
 ```
 
 Visit http://localhost:3000
-
-### Option C — Dashboard Only (no backend needed)
-
-Open `dashboard/index.html` directly in any browser.
-The dashboard has a **full mock mode** built-in — demonstrates both scenarios without running any backend.
-
----
-
-## 🎬 VC Demo Scenarios
-
-### Scenario 1 — Normal Website
-
-1. Click **"✅ Normal site (Scenario 1)"**
-2. Watch 3 validators run in parallel
-3. See: all 3 DOM hashes match → **✅ CERTIFIED**
-
-### Scenario 2 — Injected Website
-
-1. Click **"🚨 Injected site (Scenario 2)"**  
-2. Validators detect CSS injection + malicious form action + exfil script
-3. See: fingerprints differ → **🚨 MISMATCH DETECTED** with diff details
 
 ---
 
@@ -176,13 +155,14 @@ final_fingerprint = SHA256(
 - Unix timestamps  
 - Random IDs / nonces
 - Session tokens in URLs
+- Tag order snapshot.
 
 ---
 
 ## ⛓ Blockchain Notarization
 
 The `evidence_hash` is suitable for submission to any L1.
-The dashboard has a mock "Notarize on Sui Testnet" button.
+The dashboard has a mock "Notarize on Sui Testnet" button ( not functional yet).
 
 For real notarization:
 ```javascript
@@ -201,5 +181,5 @@ public entry fun notarize(evidence_hash: vector<u8>, ctx: &mut TxContext) {
 - [ ] Validator staking / slashing for anti-collusion
 - [ ] Real-time streaming results via WebSocket
 - [ ] IPFS evidence storage
-- [ ] Full Sui smart contract integration
+- [ ] Full Sui/ETH smart contract integration
 - [ ] Diff visualization for detected changes
