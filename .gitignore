@@ -1,0 +1,5 @@
+.pows_pids
+logs/
+__pycache__/
+*.pyc
+*.pyo
